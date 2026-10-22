@@ -230,6 +230,96 @@ declare namespace Flatten {
         svg(attrs?: SVGAttributes): string;
     }
 
+    class Ellipse extends Shape {
+        constructor(pc?: Point, rx?: number, ry?: number, angle?: number);
+
+        // members
+        pc: Point;
+        rx: number;
+        ry: number;
+        angle: number;
+
+        // getters
+        readonly box: Box;
+        readonly center: Point;
+
+        // public methods
+        clone(): Ellipse;
+        pointAt(t: number): Point;
+        paramOf(pt: Point): number;
+        toUnitMatrix(): Matrix;
+        fromUnitMatrix(): Matrix;
+        contains(shape: AnyShape): boolean;
+        toEllipticArc(counterclockwise?: boolean): EllipticArc;
+        intersect(shape: AnyShape): Array<Point>;
+        distanceTo(geom: AnyShape | PlanarSet): [number, Segment];
+        translate(vec: Vector): Ellipse;
+        translate(x:number, y:number): Ellipse;
+        rotate(angle: number, center?: Point): Ellipse;
+        scale(scaleX: number, scaleY: number) : Ellipse;
+        transform(matrix: Matrix): Ellipse;
+        toJSON() : Object;
+        svg(attrs?: SVGAttributes): string;
+    }
+
+    class EllipticArc extends Shape {
+        counterClockwise: boolean;
+
+        // members
+        pc: Point;
+        rx: number;
+        ry: number;
+        angle: number;
+        startAngle: number;
+        endAngle: number;
+
+        constructor(
+            pc?: Point,
+            rx?: number,
+            ry?: number,
+            angle?: number,
+            startAngle?: number,
+            endAngle?: number,
+            counterClockwise?: boolean
+        );
+
+        // getters
+        readonly ellipse: Ellipse;
+        readonly start: Point;
+        readonly end: Point;
+        readonly center: Point;
+        readonly length: number;
+        readonly sweep: number;
+        readonly vertices: [Point, Point];
+        readonly box: Box;
+
+        // public methods
+        clone(): EllipticArc;
+        pointAt(t: number): Point;
+        paramOf(pt: Point): number;
+        paramOffset(t: number): number;
+        paramAtOffset(offset: number): number;
+        contains(pt: Point): boolean;
+        split(pt: Point): [EllipticArc | null, EllipticArc | null];
+        middle(): Point;
+        pointAtLength(length: number): Point|null;
+        intersect(shape: AnyShape): Array<Point>;
+        distanceTo(geom: AnyShape | PlanarSet): [number, Segment];
+        breakToFunctional(): Array<EllipticArc>;
+        tangentInEnd(): Vector;
+        tangentInStart(): Vector;
+        reverse(): EllipticArc;
+        translate(vec: Vector): EllipticArc;
+        translate(x:number, y:number): EllipticArc;
+        rotate(angle: number, center?: Point): EllipticArc;
+        scale(scaleX: number, scaleY: number) : EllipticArc;
+        transform(matrix: Matrix): EllipticArc;
+        definiteIntegral(ymin?: number): number;
+        sortPoints(pts: Array<Point>): Array<Point>;
+        toJSON() : Object;
+        svg(attrs?: SVGAttributes): string;
+    }
+
     class Line extends Shape {
         constructor(pt?: Point, norm?: Vector);
         constructor(norm: Vector, pt: Point);
@@ -476,6 +566,7 @@ declare namespace Flatten {
         readonly box: Box;
         readonly isSegment: boolean;
         readonly isArc: boolean;
+        readonly isEllipticArc: boolean;
         readonly isLine: boolean;
         readonly isRay: boolean
 
@@ -488,8 +579,8 @@ declare namespace Flatten {
     }
 
     class PolygonEdge extends Edge {
-        shape: Segment | Arc;
-        constructor(shape: Segment | Arc);
+        shape: Segment | Arc | EllipticArc;
+        constructor(shape: Segment | Arc | EllipticArc);
     }
 
     class Face extends CircularLinkedList {
@@ -506,7 +597,7 @@ declare namespace Flatten {
         readonly perimeter: number;
         readonly edges: PolygonEdge[];
         readonly vertices: Point[];
-        readonly shapes: Array<Segment | Arc>
+        readonly shapes: Array<Segment | Arc | EllipticArc>
 
         // public methods
         append(edge: PolygonEdge): Face;
@@ -525,12 +616,12 @@ declare namespace Flatten {
     }
 
     type NumericPair = [number,number];
-    type ConstructorEdgeShape = Point | Segment | Arc ;
+    type ConstructorEdgeShape = Point | Segment | Arc | EllipticArc;
     type LoopOfShapes = Array<ConstructorEdgeShape | NumericPair>;
-    type MultiLoopOfShapes = Array<LoopOfShapes | Circle | Box>;
+    type MultiLoopOfShapes = Array<LoopOfShapes | Circle | Ellipse | Box>;
 
     class Polygon {
-        constructor(args?: LoopOfShapes | Circle | Box | MultiLoopOfShapes);
+        constructor(args?: LoopOfShapes | Circle | Ellipse | Box | MultiLoopOfShapes);
 
         // members
         edges: PlanarSet;
@@ -546,7 +637,7 @@ declare namespace Flatten {
         isValid(): boolean;
         area(): number;
         createFromArray(polygons: Polygon): Polygon
-        addFace(args: Array<Point> | Array<Segment | Arc> | Circle | Box): Face;
+        addFace(args: Array<Point> | Array<Segment | Arc | EllipticArc> | Circle | Ellipse | Box): Face;
         addFace(edge_from: Edge, edge_to: Edge): Face;
         deleteFace(face: Face): boolean;
         recreateFaces(): void;
@@ -575,7 +666,7 @@ declare namespace Flatten {
         dpath(): string;
     }
 
-    type MultilineEdgeShape = Segment | Arc | Ray | Line;
+    type MultilineEdgeShape = Segment | Arc | EllipticArc | Ray | Line;
     type MultilineShapes = Array<MultilineEdgeShape> | [Line]
 
     class MultilineEdge extends Edge {
@@ -628,12 +719,13 @@ declare namespace Flatten {
         readonly OPERATION_IS_NOT_SUPPORTED: Error;
     }
 
-    type AnyShape = Point | Vector | Line | Ray | Circle | Box | Segment | Arc | Polygon | Multiline;
+    type AnyShape = Point | Vector | Line | Ray | Circle | Ellipse | Box | Segment | Arc | EllipticArc | Polygon | Multiline;
 
     function point(x?: number, y?: number): Point;
     function point(arr?: [number, number]): Point;
     function box(xmin?: number, ymin?: number, xmax?: number, ymax?: number): Box;
     function circle(pc: Point, r: number) : Circle;
+    function ellipse(pc?: Point, rx?: number, ry?: number, angle?: number) : Ellipse;
     function line(pt?: Point, norm?: Vector) : Line;
     function line(norm?: Vector, pt?: Point) : Line;
     function line(pt1?: Point, pt2?: Point) : Line;
@@ -641,6 +733,7 @@ declare namespace Flatten {
     function segment(arr: [number, number, number, number]) : Segment;
     function segment(psx: number, psy: number, pex: number, pey: number) : Segment;
     function arc(pc?: Point, r?: number, startAngle?: number, endAngle?: number, counterClockwise?: boolean) : Arc;
+    function ellipticArc(pc?: Point, rx?: number, ry?: number, angle?: number, startAngle?: number, endAngle?: number, counterClockwise?: boolean) : EllipticArc;
     function vector(x?: number, y?: number) : Vector;
     function vector(arr: [number, number]) : Vector;
     function vector(p1: Point, p2: Point) : Vector;

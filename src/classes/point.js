@@ -174,6 +174,14 @@ export class Point extends Shape {
             return Flatten.Distance.point2arc(this, shape);
         }
 
+        if (shape instanceof Flatten.Ellipse) {
+            return Flatten.Distance.point2ellipse(this, shape);
+        }
+
+        if (shape instanceof Flatten.EllipticArc) {
+            return Flatten.Distance.point2ellipticArc(this, shape);
+        }
+
         if (shape instanceof Flatten.Box) {
             return Flatten.Distance.point2polygon(this, new Flatten.Polygon(shape));
         }

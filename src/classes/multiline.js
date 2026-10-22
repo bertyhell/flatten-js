@@ -19,12 +19,12 @@ export class Multiline extends LinkedList {
             // only first and last may be rays
             const shapes = args[0]
             const L = shapes.length
+            const shapeSegmentOrArc = (s) =>
+                s instanceof Flatten.Segment || s instanceof Flatten.Arc || s instanceof Flatten.EllipticArc;
             const anyShape = (s) =>
-                s instanceof Flatten.Segment || s instanceof Flatten.Arc ||
-                s instanceof Flatten.Ray || s instanceof Flatten.Line;
+                shapeSegmentOrArc(s) || s instanceof Flatten.Ray || s instanceof Flatten.Line;
             const anyShapeExceptLine = (s) =>
-                s instanceof Flatten.Segment || s instanceof Flatten.Arc || s instanceof Flatten.Ray;
-            const shapeSegmentOrArc = (s) => s instanceof Flatten.Segment || s instanceof Flatten.Arc;
+                shapeSegmentOrArc(s) || s instanceof Flatten.Ray;
             const validShapes =
                 L === 1 && anyShape(shapes[0]) ||
                 L > 1 && anyShapeExceptLine(shapes[0]) && anyShapeExceptLine(shapes[L - 1]) &&
@@ -227,6 +227,11 @@ export class Multiline extends LinkedList {
         }
 
         if (shape instanceof Flatten.Arc) {
+            const [dist, shortest_segment] = Flatten.Distance.shape2multiline(shape, this);
+            return [dist, shortest_segment.reverse()];
+        }
+
+        if (shape instanceof Flatten.Ellipse || shape instanceof Flatten.EllipticArc) {
             const [dist, shortest_segment] = Flatten.Distance.shape2multiline(shape, this);
             return [dist, shortest_segment.reverse()];
         }

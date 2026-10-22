@@ -35,7 +35,7 @@ export class Polygon {
      * - array of shapes of type Segment or Arc <br/>
      * - array of points (Flatten.Point) <br/>
      * - array of numeric pairs which represent points <br/>
-     * - box or circle object <br/>
+     * - box, circle or ellipse object <br/>
      * Alternatively, it is possible to use polygon.addFace method
      * @param {args} - array of shapes or array of arrays
      */
@@ -57,7 +57,8 @@ export class Polygon {
         let args = [...arguments];
         if (args.length === 1 &&
             ((args[0] instanceof Array && args[0].length > 0) ||
-                args[0] instanceof Flatten.Circle || args[0] instanceof Flatten.Box)) {
+                args[0] instanceof Flatten.Circle || args[0] instanceof Flatten.Ellipse ||
+                args[0] instanceof Flatten.Box)) {
             let argsArray = args[0];
             if (args[0] instanceof Array && args[0].every((loop) => {
                 return loop instanceof Array
@@ -168,10 +169,10 @@ export class Polygon {
 
     /**
      * Add a new face to polygon. Returns added face
-     * @param {Point[]|Segment[]|Arc[]|Circle|Box} args -  new face may be create with one of the following ways: <br/>
+     * @param {Point[]|Segment[]|Arc[]|EllipticArc[]|Circle|Ellipse|Box} args -  new face may be create with one of the following ways: <br/>
      * 1) array of points that describe closed path (edges are segments) <br/>
-     * 2) array of shapes (segments and arcs) which describe closed path <br/>
-     * 3) circle - will be added as counterclockwise arc <br/>
+     * 2) array of shapes (segments, arcs and elliptic arcs) which describe closed path <br/>
+     * 3) circle - will be added as counterclockwise arc, ellipse - as counterclockwise elliptic arc <br/>
      * 4) box - will be added as counterclockwise rectangle <br/>
      * You can chain method face.reverse() is you need to change direction of the creates face
      * @returns {Face}
@@ -565,9 +566,11 @@ export class Polygon {
         }
 
         if (shape instanceof Flatten.Circle ||
+            shape instanceof Flatten.Ellipse ||
             shape instanceof Flatten.Line ||
             shape instanceof Flatten.Segment ||
-            shape instanceof Flatten.Arc) {
+            shape instanceof Flatten.Arc ||
+            shape instanceof Flatten.EllipticArc) {
             let [dist, shortest_segment] = Flatten.Distance.shape2polygon(shape, this);
             shortest_segment = shortest_segment.reverse();
             return [dist, shortest_segment];
@@ -622,6 +625,14 @@ export class Polygon {
 
         if (shape instanceof Flatten.Arc) {
             return Intersection.intersectArc2Polygon(shape, this);
+        }
+
+        if (shape instanceof Flatten.Ellipse) {
+            return Intersection.intersectEllipse2Polygon(shape, this);
+        }
+
+        if (shape instanceof Flatten.EllipticArc) {
+            return Intersection.intersectEllipticArc2Polygon(shape, this);
         }
 
         if (shape instanceof Flatten.Polygon) {

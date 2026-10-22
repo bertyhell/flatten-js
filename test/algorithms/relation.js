@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import Flatten from '../../index';
 
 let {Polygon} = Flatten;
-let {point, vector, circle, line, box} = Flatten;
+let {point, vector, circle, line, box, segment, ellipse, ellipticArc} = Flatten;
 let {relate, disjoint, equal, intersect, touch, inside, contain, covered, cover} = Flatten.Relations;
 
 describe('#Algorithms.Relation', function() {
@@ -359,5 +359,39 @@ describe('#Algorithms.Relation', function() {
             expect(p0.contains(pB)).to.be.false;
             expect(p0.contains(pC)).to.be.true;
         });
+    });
+});
+
+describe('#Algorithms.Relation with ellipse', function () {
+    it('Line and ellipse: disjoint, touching and intersection', function () {
+        let e = ellipse(point(0, 0), 2, 1);
+        expect(disjoint(line(point(0, 3), vector(0, 1)), e)).to.be.true;
+        expect(touch(line(point(0, 1), vector(0, 1)), e)).to.be.true;
+        expect(intersect(line(point(0, 0), vector(0, 1)), e)).to.be.true;
+        let de9im = relate(line(point(0, 0), vector(0, 1)), e);
+        expect(de9im.I2I.length).to.equal(1);
+        expect(de9im.I2B.length).to.equal(2);
+        expect(de9im.I2E.length).to.equal(2);
+    });
+    it('Ellipse and box: intersect, disjoint, contain and inside', function () {
+        let e = ellipse(point(0, 0), 2, 1);
+        expect(intersect(e, box(1, 0, 3, 3))).to.be.true;
+        expect(disjoint(e, box(3, 3, 4, 4))).to.be.true;
+        expect(contain(e, box(-0.5, -0.5, 0.5, 0.5))).to.be.true;
+        expect(inside(e, box(-3, -3, 3, 3))).to.be.true;
+    });
+    it('Ellipse and circle, ellipse and ellipse', function () {
+        let e = ellipse(point(0, 0), 2, 1);
+        expect(intersect(e, circle(point(0, 0), 1.5))).to.be.true;
+        expect(contain(e, circle(point(0, 0), 0.5))).to.be.true;
+        expect(disjoint(e, ellipse(point(6, 0), 2, 1))).to.be.true;
+        expect(inside(e, ellipse(point(0, 0), 3, 2))).to.be.true;
+    });
+    it('Polygon covers segment and elliptic arc inside ellipse', function () {
+        let polygon = new Polygon(ellipse(point(0, 0), 2, 1));
+        expect(polygon.contains(segment(point(-1, 0), point(1, 0)))).to.be.true;
+        expect(polygon.contains(segment(point(-1, 0), point(3, 0)))).to.be.false;
+        expect(polygon.contains(ellipticArc(point(0, 0), 1, 0.5, 0, 0, Math.PI))).to.be.true;
+        expect(polygon.contains(point(1, 0))).to.be.true;
     });
 });

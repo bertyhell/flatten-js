@@ -101,6 +101,10 @@ export class Edge {
         return this.shape instanceof Flatten.Arc;
     }
 
+    get isEllipticArc() {
+        return this.shape instanceof Flatten.EllipticArc;
+    }
+
     get isLine() {
         return this.shape instanceof Flatten.Line;
     }
@@ -196,7 +200,8 @@ export class Edge {
                 flag = Flatten.OVERLAP_OPPOSITE;
             }
         } else if (shape1 instanceof Flatten.Segment && shape2 instanceof Flatten.Arc ||
-            shape1 instanceof Flatten.Arc && shape2 instanceof Flatten.Segment) {
+            shape1 instanceof Flatten.Arc && shape2 instanceof Flatten.Segment ||
+            shape1 instanceof Flatten.EllipticArc || shape2 instanceof Flatten.EllipticArc) {
             if (shape1.start.equalTo(shape2.start) && shape1.end.equalTo(shape2.end) && shape1.middle().equalTo(shape2.middle())) {
                 flag = Flatten.OVERLAP_SAME;
             } else if (shape1.start.equalTo(shape2.end) && shape1.end.equalTo(shape2.start) && shape1.middle().equalTo(shape2.middle())) {
@@ -231,6 +236,20 @@ export class Edge {
                 largeArcFlag = arc.sweep <= Math.PI ? "0" : "1";
 
                 return ` A${arc.r},${arc.r} 0 ${largeArcFlag},${sweepFlag} ${arc.end.x},${arc.end.y}`;
+            }
+        } else if (this.shape instanceof Flatten.EllipticArc) {
+            let arc = this.shape;
+            let sweepFlag = arc.counterClockwise ? "1" : "0";
+            let rotation = arc.angle * 180 / Math.PI;
+
+            // Draw full ellipse arc as special case: split it into two halves
+            if (Flatten.Utils.EQ(arc.sweep, 2 * Math.PI)) {
+                let middle = arc.pointAt(arc.paramAtOffset(Math.PI));
+                return ` A${arc.rx},${arc.ry} ${rotation} 0,${sweepFlag} ${middle.x},${middle.y}
+                    A${arc.rx},${arc.ry} ${rotation} 0,${sweepFlag} ${arc.end.x},${arc.end.y}`
+            } else {
+                let largeArcFlag = arc.sweep <= Math.PI ? "0" : "1";
+                return ` A${arc.rx},${arc.ry} ${rotation} ${largeArcFlag},${sweepFlag} ${arc.end.x},${arc.end.y}`;
             }
         }
     }

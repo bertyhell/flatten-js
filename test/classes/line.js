@@ -9,7 +9,7 @@ import {Errors} from "../../src/utils/errors";
 
 let {Point, Vector, Circle, Line, Segment, Arc, Box, Polygon, Edge, Face, Ray} = Flatten;
 
-let {point, vector, circle, line, segment, arc, ray} = Flatten;
+let {point, vector, circle, line, segment, arc, ray, ellipse, ellipticArc} = Flatten;
 
 describe('#Flatten.Line', function() {
     it('May create new instance of Line', function () {
@@ -231,5 +231,26 @@ describe('#Flatten.Line', function() {
         let l_json = JSON.parse(str);
         let l_parsed = line(l_json);
         expect(l_parsed).to.deep.equal(l);
+    });
+});
+
+describe('#Flatten.Line with ellipse', function() {
+    it('Can intersect line with ellipse', function () {
+        let ip = line(point(1, 0), vector(1, 0)).intersect(ellipse(point(0, 0), 2, 1));
+        expect(ip.length).to.equal(2);
+    });
+    it('Can intersect line with elliptic arc', function () {
+        let ip = line(point(1, 0), vector(1, 0)).intersect(ellipticArc(point(0, 0), 2, 1, 0, 0, Math.PI));
+        expect(ip.length).to.equal(1);
+        expect(ip[0].equalTo(point(1, Math.sqrt(3) / 2))).to.be.true;
+    });
+    it('Can measure distance from line to ellipse and elliptic arc', function () {
+        let l = line(point(0, 3), vector(0, 1));
+        let [dist, shortest_segment] = l.distanceTo(ellipse(point(0, 0), 2, 1));
+        expect(dist).to.be.closeTo(2, Flatten.DP_TOL);
+        expect(shortest_segment.ps.equalTo(point(0, 3))).to.be.true;
+        expect(shortest_segment.pe.equalTo(point(0, 1))).to.be.true;
+        let [dist2] = l.distanceTo(ellipticArc(point(0, 0), 2, 1, 0, Math.PI, 2 * Math.PI));
+        expect(dist2).to.be.closeTo(3, Flatten.DP_TOL);
     });
 });

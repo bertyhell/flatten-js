@@ -273,7 +273,8 @@ export class Box extends Shape {
             return shape.toSegments().every(segment => this.contains(segment))
         }
 
-        if (shape instanceof Flatten.Circle) {
+        if (shape instanceof Flatten.Circle || shape instanceof Flatten.Ellipse ||
+            shape instanceof Flatten.EllipticArc) {
             return this.contains(shape.box)
         }
 

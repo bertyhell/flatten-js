@@ -5,7 +5,7 @@ import Flatten from '../../index';
 
 import {Point, Vector, Circle, Line, Segment, Arc, Box, Polygon, Edge, Face, Ray} from '../../index';
 
-import {point, vector, circle, line, segment, arc, ray} from '../../index';
+import {point, vector, circle, line, segment, arc, ray, ellipse, ellipticArc} from '../../index';
 
 describe('#Flatten.Circle', function() {
     it('May create new instance of Circle', function () {
@@ -236,4 +236,23 @@ describe('#Flatten.Circle', function() {
         expect(svg.search("id")).to.not.equal(-1);
         expect(svg.search("class")).to.not.equal(-1);
     })
+});
+
+describe('#Flatten.Circle with ellipse', function() {
+    it('Can intersect circle with ellipse', function () {
+        expect(circle(point(0, 0), 1.5).intersect(ellipse(point(0, 0), 2, 1)).length).to.equal(4);
+        expect(circle(point(0, 0), 1.5).intersect(ellipticArc(point(0, 0), 2, 1, 0, 0, Math.PI)).length).to.equal(2);
+    });
+    it('Circle may contain ellipse and elliptic arc', function () {
+        let c = circle(point(0, 0), 3);
+        expect(c.contains(ellipse(point(0, 0), 2, 1))).to.be.true;
+        expect(c.contains(ellipse(point(0, 0), 4, 1))).to.be.false;
+        expect(c.contains(ellipticArc(point(0, 0), 2, 1, 0, 0, Math.PI))).to.be.true;
+    });
+    it('Can measure distance from circle to ellipse', function () {
+        let [dist, shortest_segment] = circle(point(5, 0), 1).distanceTo(ellipse(point(0, 0), 2, 1));
+        expect(dist).to.be.closeTo(2, Flatten.DP_TOL);
+        expect(shortest_segment.ps.equalTo(point(4, 0))).to.be.true;
+        expect(shortest_segment.pe.equalTo(point(2, 0))).to.be.true;
+    });
 });

@@ -18,6 +18,8 @@ export {Segment, segment} from './src/classes/segment';
 export {Line, line} from './src/classes/line';
 export {Circle, circle} from './src/classes/circle';
 export {Arc, arc} from './src/classes/arc';
+export {Ellipse, ellipse} from './src/classes/ellipse';
+export {EllipticArc, ellipticArc} from './src/classes/elliptic_arc';
 export {Box, box} from './src/classes/box';
 export {Edge} from './src/classes/edge';
 export {Face} from './src/classes/face';

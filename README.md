@@ -5,7 +5,7 @@
 # Javascript library for 2d geometry
 
 **flatten-js** is a javascript library for manipulating abstract geometrical shapes like point, vector, line, ray, segment,
-circle, arc and polygon. Shapes may be organized into Planar Set - searchable container which support spatial queries.
+circle, arc, ellipse, elliptic arc and polygon. Shapes may be organized into Planar Set - searchable container which support spatial queries.
 
 **flatten-js** provides a lot of useful methods and algorithms like finding intersections, checking inclusion, calculating distance, applying
 affine transformations, performing boolean operations and more.
@@ -81,13 +81,15 @@ You may also check out examples section in the code which illustrate different u
 * [Segment](https://alexbol99.github.io/flatten-js/Segment.html)
 * [Arc (circular)](https://alexbol99.github.io/flatten-js/Arc.html)
 * [Circle](https://alexbol99.github.io/flatten-js/Circle.html)
+* [Ellipse](https://alexbol99.github.io/flatten-js/Ellipse.html)
+* [EllipticArc](https://alexbol99.github.io/flatten-js/EllipticArc.html)
 * [Box (may be used as rectangle)](https://alexbol99.github.io/flatten-js/Box.html)
 
 ### Polygon
 
 [Polygon](https://alexbol99.github.io/flatten-js/Polygon.html) in **flatten-js** library is actually a multi-polygon.
 Polygon is a collection of faces - 
-closed oriented chains of edges, which may be of type Segment or Arc. The most external face
+closed oriented chains of edges, which may be of type Segment, Arc or EllipticArc. The most external face
 called island, a face included into it is called hole. Holes in turn may have inner islands,
 number of inclusion levels is unlimited.
  
@@ -97,11 +99,11 @@ It means that for proper results faces in a polygon should be **orientable**: th
 Faces also should not overlap each other. Method ```isValid()``` checks if polygon fit these rules.
 
 Constructor of the polygon object accept various inputs:
-* Array of shapes (instances of Flatten.Segment or Flatten.Arc) that represent closed chains
+* Array of shapes (instances of Flatten.Segment, Flatten.Arc or Flatten.EllipticArc) that represent closed chains
 * Array of shapes as json objects that represent closed chains 
 * Array of points (Flatten.Point) that represent vertices of the polygon
 * Array of numeric pairs [x,y] that represent vertices of the polygon
-* Instances of Circle or Box
+* Instances of Circle, Ellipse or Box
 
 Polygon provides various useful methods:
 * ```area``` - calculate area of a polygon

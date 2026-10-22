@@ -7,7 +7,7 @@
 import { expect } from 'chai';
 import Flatten from '../index';
 
-import {Point, Vector, Circle, Line, Segment, Arc, Box, Polygon, Edge, Face, Ray, Matrix, Distance, Inversion} from '../index';
+import {Point, Vector, Circle, Line, Segment, Arc, Ellipse, EllipticArc, Box, Polygon, Edge, Face, Ray, Matrix, Distance, Inversion} from '../index';
 
 describe('#Flatten-JS', function() {
     it('Namespace Flatten defined', function () {
@@ -33,6 +33,12 @@ describe('#Flatten-JS', function() {
     });
     it('Class Circle defined', function() {
         expect(Circle).to.exist;
+    });
+    it('Class Ellipse defined', function() {
+        expect(Ellipse).to.exist;
+    });
+    it('Class EllipticArc defined', function() {
+        expect(EllipticArc).to.exist;
     });
     it('Class Segment defined', function() {
         expect(Segment).to.exist;

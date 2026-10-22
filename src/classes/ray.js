@@ -161,6 +161,14 @@ export class Ray extends Shape {
             return Intersection.intersectRay2Arc(this, shape);
         }
 
+        if (shape instanceof Flatten.Ellipse) {
+            return Intersection.intersectRay2Ellipse(this, shape);
+        }
+
+        if (shape instanceof Flatten.EllipticArc) {
+            return Intersection.intersectRay2EllipticArc(this, shape);
+        }
+
         if (shape instanceof Flatten.Line) {
             return Intersection.intersectRay2Line(this, shape);
         }

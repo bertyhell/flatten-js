@@ -7,7 +7,7 @@
 import {expect} from 'chai';
 import Flatten from '../../index';
 import {Polygon} from '../../index';
-import {point, circle, segment, arc} from '../../index';
+import {point, circle, segment, arc, ellipse, box} from '../../index';
 import {parseWKT} from '../../index';
 import {Errors} from "../../src/utils/errors";
 
@@ -1110,4 +1110,40 @@ describe('#Algorithms.Boolean Operations', function () {
 
         })
     })
+});
+
+describe('#Algorithms.Boolean Operations with ellipse', function () {
+    let polygon_ellipse = () => new Polygon(ellipse(point(0, 0), 2, 1));
+    let polygon_box = () => new Polygon(box(0, -2, 4, 2));
+
+    it('Can unify ellipse and box', function () {
+        let result = unify(polygon_ellipse(), polygon_box());
+        expect(result.faces.size).to.equal(1);
+        expect(result.area()).to.be.closeTo(16 + Math.PI, 1e-6);
+    });
+    it('Can subtract box from ellipse', function () {
+        let result = subtract(polygon_ellipse(), polygon_box());
+        expect(result.faces.size).to.equal(1);
+        expect(result.area()).to.be.closeTo(Math.PI, 1e-6);
+    });
+    it('Can intersect ellipse and box', function () {
+        let result = intersect(polygon_ellipse(), polygon_box());
+        expect(result.faces.size).to.equal(1);
+        expect(result.area()).to.be.closeTo(Math.PI, 1e-6);
+    });
+    it('Can intersect two ellipses', function () {
+        let polygon1 = new Polygon(ellipse(point(0, 0), 2, 1));
+        let polygon2 = new Polygon(ellipse(point(0, 0), 1, 2));
+        let result = intersect(polygon1, polygon2);
+        // area of intersection of ellipses x^2/4 + y^2 = 1 and x^2 + y^2/4 = 1
+        let expected = 8 * Math.atan(1 / 2);
+        expect(result.area()).to.be.closeTo(expected, 1e-6);
+        let union = unify(polygon1, polygon2);
+        expect(union.area()).to.be.closeTo(4 * Math.PI - expected, 1e-6);
+    });
+    it('Can subtract ellipse from box creating a hole', function () {
+        let result = subtract(new Polygon(box(-4, -4, 4, 4)), new Polygon(ellipse(point(0, 0), 2, 1, Math.PI / 6)));
+        expect(result.faces.size).to.equal(2);
+        expect(result.area()).to.be.closeTo(64 - 2 * Math.PI, 1e-6);
+    });
 });

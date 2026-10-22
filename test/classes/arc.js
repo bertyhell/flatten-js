@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import Flatten from '../../index';
 
 import {Point, Vector, Circle, Line, Segment, Arc, Box, Polygon, Edge, Face, Ray} from '../../index';
-import {point, vector, circle, line, segment, arc, matrix, ray} from '../../index';
+import {point, vector, circle, line, segment, arc, matrix, ray, ellipse, ellipticArc} from '../../index';
 
 describe('#Flatten.Arc', function() {
     it('May create new instance of Arc', function () {
@@ -438,5 +438,31 @@ describe('#Flatten.Arc', function() {
             expect(dist).to.equal(1);
             expect(shortest_segment).to.deep.equal({ps: {x: 2, y: 0.5}, pe: {x: 1, y: 0.5}});
         });
+    });
+});
+
+describe('#Flatten.Arc with ellipse', function() {
+    it('Can intersect arc with ellipse', function () {
+        let ip = arc(point(0, 0), 1.5, 0, Math.PI, true).intersect(ellipse(point(0, 0), 2, 1));
+        expect(ip.length).to.equal(2);
+    });
+    it('Can intersect arc with elliptic arc', function () {
+        let ip = arc(point(0, 0), 1.5, 0, Math.PI / 2, true).intersect(ellipticArc(point(0, 0), 2, 1, 0, 0, Math.PI));
+        expect(ip.length).to.equal(1);
+    });
+    it('Intersection of arc and elliptic arc on the same circle returns end points', function () {
+        let ip = arc(point(0, 0), 1, 0, Math.PI, true).intersect(ellipticArc(point(0, 0), 1, 1, 0, Math.PI / 2, 3 * Math.PI / 2));
+        expect(ip.length).to.equal(2);
+        expect(ip.some(pt => pt.equalTo(point(-1, 0)))).to.be.true;
+        expect(ip.some(pt => pt.equalTo(point(0, 1)))).to.be.true;
+    });
+    it('Can measure distance from arc to ellipse and elliptic arc', function () {
+        let a = arc(point(0, 0), 4, -Math.PI / 4, Math.PI / 4, true);
+        let [dist, shortest_segment] = a.distanceTo(ellipse(point(0, 0), 2, 1));
+        expect(dist).to.be.closeTo(2, Flatten.DP_TOL);
+        expect(shortest_segment.ps.equalTo(point(4, 0))).to.be.true;
+        expect(shortest_segment.pe.equalTo(point(2, 0))).to.be.true;
+        let [dist2] = a.distanceTo(ellipticArc(point(0, 0), 2, 1, 0, 0, Math.PI));
+        expect(dist2).to.be.closeTo(2, Flatten.DP_TOL);
     });
 });

@@ -424,23 +424,47 @@ export function intersectArc2Box(arc, box) {
 }
 
 export function intersectEdge2Segment(edge, segment) {
-    return edge.isSegment ? intersectSegment2Segment(edge.shape, segment) : intersectSegment2Arc(segment, edge.shape);
+    if (edge.isSegment) return intersectSegment2Segment(edge.shape, segment);
+    if (edge.isArc) return intersectSegment2Arc(segment, edge.shape);
+    return edge.shape.intersect(segment);
 }
 
 export function intersectEdge2Arc(edge, arc) {
-    return edge.isSegment ? intersectSegment2Arc(edge.shape, arc) : intersectArc2Arc(edge.shape, arc);
+    if (edge.isSegment) return intersectSegment2Arc(edge.shape, arc);
+    if (edge.isArc) return intersectArc2Arc(edge.shape, arc);
+    return edge.shape.intersect(arc);
 }
 
 export function intersectEdge2Line(edge, line) {
-    return edge.isSegment ? intersectSegment2Line(edge.shape, line) : intersectLine2Arc(line, edge.shape);
+    if (edge.isSegment) return intersectSegment2Line(edge.shape, line);
+    if (edge.isArc) return intersectLine2Arc(line, edge.shape);
+    return edge.shape.intersect(line);
 }
 
 export function intersectEdge2Ray(edge, ray) {
-    return edge.isSegment ? intersectRay2Segment(ray, edge.shape) : intersectRay2Arc(ray, edge.shape);
+    if (edge.isSegment) return intersectRay2Segment(ray, edge.shape);
+    if (edge.isArc) return intersectRay2Arc(ray, edge.shape);
+    return edge.shape.intersect(ray);
 }
 
 export function intersectEdge2Circle(edge, circle) {
-    return edge.isSegment ? intersectSegment2Circle(edge.shape, circle) : intersectArc2Circle(edge.shape, circle);
+    if (edge.isSegment) return intersectSegment2Circle(edge.shape, circle);
+    if (edge.isArc) return intersectArc2Circle(edge.shape, circle);
+    return edge.shape.intersect(circle);
+}
+
+export function intersectEdge2Ellipse(edge, ellipse) {
+    if (edge.isSegment) return intersectSegment2Ellipse(edge.shape, ellipse);
+    if (edge.isArc) return intersectArc2Ellipse(edge.shape, ellipse);
+    if (edge.isEllipticArc) return intersectEllipticArc2Ellipse(edge.shape, ellipse);
+    return edge.shape.intersect(ellipse);
+}
+
+export function intersectEdge2EllipticArc(edge, ellipticArc) {
+    if (edge.isSegment) return intersectSegment2EllipticArc(edge.shape, ellipticArc);
+    if (edge.isArc) return intersectArc2EllipticArc(edge.shape, ellipticArc);
+    if (edge.isEllipticArc) return intersectEllipticArc2EllipticArc(edge.shape, ellipticArc);
+    return edge.shape.intersect(ellipticArc);
 }
 
 export function intersectSegment2Polygon(segment, polygon) {
@@ -507,6 +531,9 @@ export function intersectEdge2Edge(edge1, edge2) {
     }
     else if (edge1.isArc) {
         return intersectEdge2Arc(edge2, edge1.shape)
+    }
+    else if (edge1.isEllipticArc) {
+        return intersectEdge2EllipticArc(edge2, edge1.shape)
     }
     else if (edge1.isLine) {
         return intersectEdge2Line(edge2, edge1.shape)
@@ -587,6 +614,12 @@ export function intersectShape2Polygon(shape, polygon) {
     else if (shape instanceof Flatten.Arc) {
         return intersectArc2Polygon(shape, polygon);
     }
+    else if (shape instanceof Flatten.EllipticArc) {
+        return intersectEllipticArc2Polygon(shape, polygon);
+    }
+    else if (shape instanceof Flatten.Ellipse) {
+        return intersectEllipse2Polygon(shape, polygon);
+    }
     else {
         return [];
     }
@@ -657,5 +690,411 @@ export function intersectMultiline2Multiline(multiline1, multiline2) {
             ip = [...ip, ...intersectShape2Shape(edge1.shape, edge2.shape)];
         }
     }
+    return ip;
+}
+
+export function intersectLine2Ellipse(line, ellipse) {
+    let ip = [];
+
+    // Degenerated ellipse
+    if (Flatten.Utils.EQ_0(ellipse.rx) || Flatten.Utils.EQ_0(ellipse.ry)) {
+        return ip;
+    }
+
+    // Map line to the frame where ellipse is a unit circle, intersect and map points back
+    let to_unit = ellipse.toUnitMatrix();
+    let from_unit = ellipse.fromUnitMatrix();
+    let pt1 = line.pt.transform(to_unit);
+    let pt2 = line.pt.translate(line.norm.rotate90CCW()).transform(to_unit);
+    let unit_line = new Flatten.Line(pt1, pt2);
+    let unit_circle = new Flatten.Circle(new Flatten.Point(0, 0), 1);
+
+    for (let pt of intersectLine2Circle(unit_line, unit_circle)) {
+        ip.push(pt.transform(from_unit));
+    }
+    return ip;
+}
+
+export function intersectRay2Ellipse(ray, ellipse) {
+    return intersectLine2Ellipse(createLineFromRay(ray), ellipse)
+        .filter(pt => ray.contains(pt))
+}
+
+export function intersectSegment2Ellipse(segment, ellipse) {
+    let ips = [];
+
+    // Special case of zero length segment
+    if (segment.isZeroLength()) {
+        if (pointOnEllipse(segment.ps, ellipse)) {
+            ips.push(segment.ps);
+        }
+        return ips;
+    }
+
+    // Non zero-length segment
+    let line = new Flatten.Line(segment.ps, segment.pe);
+
+    for (let ip of intersectLine2Ellipse(line, ellipse)) {
+        if (ip.on(segment)) {
+            ips.push(ip);
+        }
+    }
+
+    return ips;
+}
+
+export function intersectEllipse2Box(ellipse, box) {
+    let ips = [];
+    for (let seg of box.toSegments()) {
+        for (let ip of intersectSegment2Ellipse(seg, ellipse)) {
+            if (!ptInIntPoints(ip, ips)) {
+                ips.push(ip);
+            }
+        }
+    }
+    return ips;
+}
+
+export function intersectEllipse2Circle(ellipse, circle) {
+    let ip = [];
+
+    // Degenerated ellipse or circle
+    if (Flatten.Utils.EQ_0(ellipse.rx) || Flatten.Utils.EQ_0(ellipse.ry) || Flatten.Utils.EQ_0(circle.r)) {
+        return ip;
+    }
+
+    if (ellipse.box.not_intersect(circle.box)) {
+        return ip;
+    }
+
+    // In case of equal shapes return one leftmost point
+    if (ellipseIsCircle(ellipse, circle)) {
+        ip.push(circle.pc.translate(-circle.r, 0));
+        return ip;
+    }
+
+    let {pc, r} = circle;
+    return intersectEllipse2Implicit(ellipse,
+        (pt) => (pt.x - pc.x) * (pt.x - pc.x) + (pt.y - pc.y) * (pt.y - pc.y) - r * r,
+        (pt) => Flatten.Utils.EQ(pt.distanceTo(pc)[0], r)
+    );
+}
+
+export function intersectEllipse2Ellipse(ellipse1, ellipse2) {
+    let ip = [];
+
+    // Degenerated ellipses
+    if (Flatten.Utils.EQ_0(ellipse1.rx) || Flatten.Utils.EQ_0(ellipse1.ry) ||
+        Flatten.Utils.EQ_0(ellipse2.rx) || Flatten.Utils.EQ_0(ellipse2.ry)) {
+        return ip;
+    }
+
+    if (ellipse1.box.not_intersect(ellipse2.box)) {
+        return ip;
+    }
+
+    // In case of equal ellipses return one leftmost point
+    if (equalEllipses(ellipse1, ellipse2)) {
+        let box = ellipse1.box;
+        let [t1, t2] = ellipseLeftRightParams(ellipse1);
+        let pt1 = ellipse1.pointAt(t1);
+        let pt2 = ellipse1.pointAt(t2);
+        ip.push(Flatten.Utils.LE(pt1.x, box.xmin) ? pt1 : pt2);
+        return ip;
+    }
+
+    let cos = Math.cos(ellipse2.angle);
+    let sin = Math.sin(ellipse2.angle);
+    let {pc, rx, ry} = ellipse2;
+    return intersectEllipse2Implicit(ellipse1,
+        (pt) => {
+            let dx = pt.x - pc.x;
+            let dy = pt.y - pc.y;
+            let u = (cos * dx + sin * dy) / rx;
+            let v = (-sin * dx + cos * dy) / ry;
+            return u * u + v * v - 1;
+        },
+        (pt) => pointOnEllipse(pt, ellipse2)
+    );
+}
+
+export function intersectArc2Ellipse(arc, ellipse) {
+    let ip = [];
+
+    // Case when arc lies on the ellipse
+    // Return arc's end points as 2 intersection points
+    let circle = new Flatten.Circle(arc.pc, arc.r);
+    if (ellipseIsCircle(ellipse, circle)) {
+        ip.push(arc.start);
+        ip.push(arc.end);
+        return ip;
+    }
+
+    // Common case
+    for (let pt of intersectEllipse2Circle(ellipse, circle)) {
+        if (pt.on(arc)) {
+            ip.push(pt);
+        }
+    }
+    return ip;
+}
+
+export function intersectEllipse2Polygon(ellipse, polygon) {
+    let ip = [];
+
+    if (polygon.isEmpty()) {
+        return ip;
+    }
+
+    for (let edge of polygon.edges) {
+        for (let pt of intersectEdge2Ellipse(edge, ellipse)) {
+            ip.push(pt);
+        }
+    }
+
+    return ip;
+}
+
+export function intersectLine2EllipticArc(line, ellipticArc) {
+    if (intersectLine2Box(line, ellipticArc.box).length === 0) {
+        return [];
+    }
+    return intersectLine2Ellipse(line, ellipticArc.ellipse)
+        .filter(pt => pt.on(ellipticArc));
+}
+
+export function intersectRay2EllipticArc(ray, ellipticArc) {
+    return intersectLine2EllipticArc(createLineFromRay(ray), ellipticArc)
+        .filter(pt => ray.contains(pt));
+}
+
+export function intersectSegment2EllipticArc(segment, ellipticArc) {
+    // Special case of zero-length segment
+    if (segment.isZeroLength()) {
+        return segment.ps.on(ellipticArc) ? [segment.ps] : [];
+    }
+
+    return intersectSegment2Ellipse(segment, ellipticArc.ellipse)
+        .filter(pt => pt.on(ellipticArc));
+}
+
+export function intersectEllipticArc2Circle(ellipticArc, circle) {
+    // Case when elliptic arc lies on the circle
+    // Return arc's end points as 2 intersection points
+    if (ellipseIsCircle(ellipticArc.ellipse, circle)) {
+        return [ellipticArc.start, ellipticArc.end];
+    }
+
+    return intersectEllipse2Circle(ellipticArc.ellipse, circle)
+        .filter(pt => pt.on(ellipticArc));
+}
+
+export function intersectEllipticArc2Ellipse(ellipticArc, ellipse) {
+    // Case when elliptic arc lies on the ellipse
+    // Return arc's end points as 2 intersection points
+    if (equalEllipses(ellipticArc.ellipse, ellipse)) {
+        return [ellipticArc.start, ellipticArc.end];
+    }
+
+    return intersectEllipse2Ellipse(ellipticArc.ellipse, ellipse)
+        .filter(pt => pt.on(ellipticArc));
+}
+
+export function intersectArc2EllipticArc(arc, ellipticArc) {
+    let circle = new Flatten.Circle(arc.pc, arc.r);
+
+    // Special case: overlapping arcs
+    if (ellipseIsCircle(ellipticArc.ellipse, circle)) {
+        return overlappingArcsEndPoints(arc, ellipticArc);
+    }
+
+    return intersectEllipse2Circle(ellipticArc.ellipse, circle)
+        .filter(pt => pt.on(arc) && pt.on(ellipticArc));
+}
+
+export function intersectEllipticArc2EllipticArc(ellipticArc1, ellipticArc2) {
+    let ellipse1 = ellipticArc1.ellipse;
+    let ellipse2 = ellipticArc2.ellipse;
+
+    // Special case: overlapping arcs
+    if (equalEllipses(ellipse1, ellipse2)) {
+        return overlappingArcsEndPoints(ellipticArc1, ellipticArc2);
+    }
+
+    return intersectEllipse2Ellipse(ellipse1, ellipse2)
+        .filter(pt => pt.on(ellipticArc1) && pt.on(ellipticArc2));
+}
+
+export function intersectEllipticArc2Box(ellipticArc, box) {
+    let ips = [];
+    for (let seg of box.toSegments()) {
+        for (let ip of intersectSegment2EllipticArc(seg, ellipticArc)) {
+            ips.push(ip);
+        }
+    }
+    return ips;
+}
+
+export function intersectEllipticArc2Polygon(ellipticArc, polygon) {
+    let ip = [];
+
+    for (let edge of polygon.edges) {
+        for (let pt of intersectEdge2EllipticArc(edge, ellipticArc)) {
+            ip.push(pt);
+        }
+    }
+
+    return ip;
+}
+
+/**
+ * Return end points of the arc that lie on the other arc. Both arcs lie on the same curve.
+ * May return up to 4 points
+ */
+function overlappingArcsEndPoints(arc1, arc2) {
+    let ip = [];
+    for (let pt of [arc1.start, arc1.end]) {
+        if (pt.on(arc2) && !ptInIntPoints(pt, ip)) ip.push(pt);
+    }
+    for (let pt of [arc2.start, arc2.end]) {
+        if (pt.on(arc1) && !ptInIntPoints(pt, ip)) ip.push(pt);
+    }
+    return ip;
+}
+
+function pointOnEllipse(pt, ellipse) {
+    return Flatten.Utils.EQ_0(Flatten.Distance.point2ellipse(pt, ellipse)[0]);
+}
+
+function ellipseIsCircle(ellipse, circle) {
+    return ellipse.pc.equalTo(circle.pc) &&
+        Flatten.Utils.EQ(ellipse.rx, circle.r) &&
+        Flatten.Utils.EQ(ellipse.ry, circle.r);
+}
+
+function anglesEqualModPI(angle1, angle2) {
+    let diff = (angle1 - angle2) % Math.PI;
+    if (diff < 0) diff += Math.PI;
+    return Flatten.Utils.EQ_0(diff) || Flatten.Utils.EQ(diff, Math.PI);
+}
+
+function equalEllipses(ellipse1, ellipse2) {
+    if (!ellipse1.pc.equalTo(ellipse2.pc)) {
+        return false;
+    }
+    let {EQ} = Flatten.Utils;
+    if (EQ(ellipse1.rx, ellipse2.rx) && EQ(ellipse1.ry, ellipse2.ry)) {
+        return EQ(ellipse1.rx, ellipse1.ry) || anglesEqualModPI(ellipse1.angle, ellipse2.angle);
+    }
+    if (EQ(ellipse1.rx, ellipse2.ry) && EQ(ellipse1.ry, ellipse2.rx)) {
+        return anglesEqualModPI(ellipse1.angle, ellipse2.angle + Math.PI / 2);
+    }
+    return false;
+}
+
+function ellipseLeftRightParams(ellipse) {
+    let cos = Math.cos(ellipse.angle);
+    let sin = Math.sin(ellipse.angle);
+    let t = Math.atan2(-ellipse.ry * sin, ellipse.rx * cos);
+    return [t, t + Math.PI];
+}
+
+const ELLIPSE_SAMPLES = 360;
+const GOLDEN_RATIO = (Math.sqrt(5) - 1) / 2;
+
+function goldenSectionMin(f, a, b) {
+    let c = b - GOLDEN_RATIO * (b - a);
+    let d = a + GOLDEN_RATIO * (b - a);
+    let fc = f(c);
+    let fd = f(d);
+    for (let i = 0; i < 200 && b - a > 1e-15; i++) {
+        if (fc < fd) {
+            b = d; d = c; fd = fc;
+            c = b - GOLDEN_RATIO * (b - a);
+            fc = f(c);
+        } else {
+            a = c; c = d; fc = fd;
+            d = a + GOLDEN_RATIO * (b - a);
+            fd = f(d);
+        }
+    }
+    return (a + b) / 2;
+}
+
+function bisectRoot(f, a, b) {
+    let fa = f(a);
+    for (let i = 0; i < 200; i++) {
+        let m = (a + b) / 2;
+        if (m <= a || m >= b) break;
+        let fm = f(m);
+        if (fm === 0) return m;
+        if ((fm > 0) === (fa > 0)) {
+            a = m;
+            fa = fm;
+        } else {
+            b = m;
+        }
+    }
+    return (a + b) / 2;
+}
+
+/**
+ * Find intersection points of the ellipse with the curve defined by implicit function f(pt) = 0.
+ * Parameter of the ellipse is sampled, roots are found by bisection where f changes sign.
+ * Local minimums of |f| without change of sign are refined by golden section search
+ * to find touching points and pairs of close roots.
+ * @param {Ellipse} ellipse
+ * @param {function} f - implicit function of the other curve
+ * @param {function} isOn - returns true if point belongs to the other curve
+ * @returns {Point[]}
+ */
+function intersectEllipse2Implicit(ellipse, f, isOn) {
+    const N = ELLIPSE_SAMPLES;
+    const step = Flatten.PIx2 / N;
+    let g = (t) => f(ellipse.pointAt(t));
+    let fs = [];
+    for (let i = 0; i < N; i++) {
+        fs.push(g(i * step));
+    }
+
+    let ip = [];
+    let add = (t) => {
+        let pt = ellipse.pointAt(t);
+        if (!ptInIntPoints(pt, ip)) {
+            ip.push(pt);
+        }
+    };
+
+    for (let i = 0; i < N; i++) {
+        let f_cur = fs[i];
+        let f_next = fs[(i + 1) % N];
+        if (f_cur === 0) {
+            add(i * step);
+        } else if (f_cur * f_next < 0) {
+            add(bisectRoot(g, i * step, (i + 1) * step));
+        }
+    }
+
+    for (let i = 0; i < N; i++) {
+        let f_prev = fs[(i - 1 + N) % N];
+        let f_cur = fs[i];
+        let f_next = fs[(i + 1) % N];
+        if (f_cur === 0 || f_prev * f_cur <= 0 || f_cur * f_next <= 0) continue;
+        if (Math.abs(f_cur) > Math.abs(f_prev) || Math.abs(f_cur) > Math.abs(f_next)) continue;
+
+        let sign = f_cur > 0 ? 1 : -1;
+        let a = (i - 1) * step;
+        let b = (i + 1) * step;
+        let t_min = goldenSectionMin((t) => sign * g(t), a, b);
+        if (sign * g(t_min) < 0) {
+            // two close roots between samples
+            add(bisectRoot(g, a, t_min));
+            add(bisectRoot(g, t_min, b));
+        } else if (isOn(ellipse.pointAt(t_min))) {
+            // touching point
+            add(t_min);
+        }
+    }
+
     return ip;
 }

@@ -7,7 +7,7 @@ import { expect } from 'chai';
 import Flatten, {Relations as to} from '../../index';
 
 import {Point, Vector, Circle, Line, Segment, Arc, Box, Polygon, Edge, Face, Ray} from '../../index';
-import {point, vector, circle, line, segment, arc, ray} from '../../index';
+import {point, vector, circle, line, segment, arc, ray, ellipse, ellipticArc} from '../../index';
 import {Errors} from "../../src/utils/errors";
 
 describe('#Flatten.Segment', function() {
@@ -302,5 +302,29 @@ describe('#Flatten.Segment', function() {
                 expect(segment.contains(point)).to.be.true
             }
         });
+    });
+});
+
+describe('#Flatten.Segment with ellipse', function() {
+    it('Can intersect segment with ellipse', function () {
+        let ip = segment(point(0, 0), point(3, 0)).intersect(ellipse(point(0, 0), 2, 1));
+        expect(ip.length).to.equal(1);
+        expect(ip[0].equalTo(point(2, 0))).to.be.true;
+    });
+    it('Can intersect segment with elliptic arc', function () {
+        let ip = segment(point(0, -2), point(0, 2)).intersect(ellipticArc(point(0, 0), 2, 1, 0, 0, Math.PI));
+        expect(ip.length).to.equal(1);
+        expect(ip[0].equalTo(point(0, 1))).to.be.true;
+    });
+    it('Can measure distance from segment to ellipse', function () {
+        let [dist, shortest_segment] = segment(point(-1, 3), point(1, 3)).distanceTo(ellipse(point(0, 0), 2, 1));
+        expect(dist).to.be.closeTo(2, Flatten.DP_TOL);
+        expect(shortest_segment.ps.equalTo(point(0, 3))).to.be.true;
+        expect(shortest_segment.pe.equalTo(point(0, 1))).to.be.true;
+    });
+    it('Can measure distance from segment to elliptic arc', function () {
+        let [dist, shortest_segment] = segment(point(3, -1), point(3, 1)).distanceTo(ellipticArc(point(0, 0), 2, 1, 0, 0, Math.PI));
+        expect(dist).to.be.closeTo(1, Flatten.DP_TOL);
+        expect(shortest_segment.pe.equalTo(point(2, 0))).to.be.true;
     });
 });

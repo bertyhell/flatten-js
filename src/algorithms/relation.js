@@ -14,6 +14,7 @@ import {
     intersectLine2Arc,
     intersectLine2Box,
     intersectLine2Circle,
+    intersectLine2Ellipse,
     intersectLine2Line,
     intersectLine2Polygon,
     intersectSegment2Line,
@@ -123,7 +124,8 @@ export function relate(shape1, shape2) {
     if (shape1 instanceof Flatten.Line && shape2 instanceof Flatten.Line) {
         return relateLine2Line(shape1,  shape2);
     }
-    else if (shape1 instanceof Flatten.Line && shape2 instanceof Flatten.Circle) {
+    else if (shape1 instanceof Flatten.Line &&
+        (shape2 instanceof Flatten.Circle || shape2 instanceof Flatten.Ellipse)) {
         return relateLine2Circle(shape1, shape2);
     }
     else if (shape1 instanceof Flatten.Line && shape2 instanceof Flatten.Box) {
@@ -132,26 +134,34 @@ export function relate(shape1, shape2) {
     else if ( shape1 instanceof Flatten.Line  && shape2 instanceof Flatten.Polygon) {
         return relateLine2Polygon(shape1, shape2);
     }
-    else if ( (shape1 instanceof Flatten.Segment || shape1 instanceof Flatten.Arc)  && shape2 instanceof Flatten.Polygon) {
+    else if (isEdgeShape(shape1) && shape2 instanceof Flatten.Polygon) {
         return relateShape2Polygon(shape1, shape2);
     }
-    else if ( (shape1 instanceof Flatten.Segment || shape1 instanceof Flatten.Arc)  &&
-        (shape2 instanceof Flatten.Circle || shape2 instanceof Flatten.Box) ) {
+    else if (isEdgeShape(shape1) && isAreaShape(shape2)) {
         return relateShape2Polygon(shape1, new Flatten.Polygon(shape2));
     }
     else if (shape1 instanceof Flatten.Polygon && shape2 instanceof Flatten.Polygon) {
         return relatePolygon2Polygon(shape1, shape2);
     }
-    else if ((shape1 instanceof Flatten.Circle || shape1 instanceof Flatten.Box) &&
-        (shape2 instanceof  Flatten.Circle || shape2 instanceof Flatten.Box)) {
+    else if (isAreaShape(shape1) && isAreaShape(shape2)) {
         return relatePolygon2Polygon(new Flatten.Polygon(shape1), new Flatten.Polygon(shape2));
     }
-    else if ((shape1 instanceof Flatten.Circle || shape1 instanceof Flatten.Box) && shape2 instanceof Flatten.Polygon) {
+    else if (isAreaShape(shape1) && shape2 instanceof Flatten.Polygon) {
         return relatePolygon2Polygon(new Flatten.Polygon(shape1), shape2);
     }
-    else if (shape1 instanceof Flatten.Polygon && (shape2 instanceof Flatten.Circle || shape2 instanceof Flatten.Box)) {
+    else if (shape1 instanceof Flatten.Polygon && isAreaShape(shape2)) {
         return relatePolygon2Polygon(shape1, new Flatten.Polygon(shape2));
     }
+}
+
+/* Shapes that may be an edge of the polygon */
+function isEdgeShape(shape) {
+    return shape instanceof Flatten.Segment || shape instanceof Flatten.Arc || shape instanceof Flatten.EllipticArc;
+}
+
+/* Shapes that may be converted into a polygon */
+function isAreaShape(shape) {
+    return shape instanceof Flatten.Circle || shape instanceof Flatten.Ellipse || shape instanceof Flatten.Box;
 }
 
 function relateLine2Line(line1, line2) {
@@ -179,7 +189,7 @@ function relateLine2Line(line1, line2) {
 
 function relateLine2Circle(line,circle) {
     let denim = new DE9IM();
-    let ip = intersectLine2Circle(line, circle);
+    let ip = circle instanceof Flatten.Ellipse ? intersectLine2Ellipse(line, circle) : intersectLine2Circle(line, circle);
     if (ip.length === 0) {
         denim.I2I = [];
         denim.I2B = [];
@@ -203,7 +213,8 @@ function relateLine2Circle(line,circle) {
         denim.I2B = ip_sorted;
         denim.I2E = [splitShapes[0], splitShapes[2]];
 
-        denim.E2I = new Flatten.Polygon([circle.toArc()]).cutWithLine(line);
+        let contour = circle instanceof Flatten.Ellipse ? circle.toEllipticArc() : circle.toArc();
+        denim.E2I = new Flatten.Polygon([contour]).cutWithLine(line);
     }
 
     return denim;

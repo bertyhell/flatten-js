@@ -73,19 +73,22 @@ export class Face extends CircularLinkedList {
                 }
                 /* array of segments ot arcs */
                 else if (shapes.every((shape) => {
-                    return (shape instanceof Flatten.Segment || shape instanceof Flatten.Arc)
+                    return (shape instanceof Flatten.Segment || shape instanceof Flatten.Arc ||
+                        shape instanceof Flatten.EllipticArc)
                 })) {
                     this.shapes2face(polygon.edges, shapes);
                 }
                 // this is from JSON.parse object
                 else if (shapes.every((shape) => {
-                    return (shape.name === "segment" || shape.name === "arc")
+                    return (shape.name === "segment" || shape.name === "arc" || shape.name === "ellipticArc")
                 })) {
                     let flattenShapes = [];
                     for (let shape of shapes) {
                         let flattenShape;
                         if (shape.name === "segment") {
                             flattenShape = new Flatten.Segment(shape);
+                        } else if (shape.name === "ellipticArc") {
+                            flattenShape = new Flatten.EllipticArc(shape);
                         } else {
                             flattenShape = new Flatten.Arc(shape);
                         }
@@ -106,6 +109,10 @@ export class Face extends CircularLinkedList {
             /* Instantiate face from a circle in CCW orientation */
             else if (args[0] instanceof Flatten.Circle) {
                 this.shapes2face(polygon.edges, [args[0].toArc(CCW)]);
+            }
+            /* Instantiate face from an ellipse in CCW orientation */
+            else if (args[0] instanceof Flatten.Ellipse) {
+                this.shapes2face(polygon.edges, [args[0].toEllipticArc(CCW)]);
             }
             /* Instantiate face from a box in CCW orientation */
             else if (args[0] instanceof Flatten.Box) {

@@ -8,7 +8,7 @@ import { expect } from 'chai';
 import Flatten from '../../index';
 
 import {Point, Vector, Circle, Line, Segment, Arc, Box, Polygon, Edge, Face, Ray} from '../../index';
-import {point, vector, circle, line, segment, arc, ray} from '../../index';
+import {point, vector, circle, line, segment, arc, ray, ellipse, ellipticArc} from '../../index';
 
 describe('#Flatten.Ray', function() {
     it('May create new instance of Ray', function () {
@@ -164,5 +164,18 @@ describe('#Flatten.Ray', function() {
         expect(r.box.ymax).to.equal(-3);
         expect(r.contains(point(5,-5))).to.be.true;
         expect(r.intersect(seg)[0].equalTo(point(5,-5))).to.be.true;
+    });
+});
+
+describe('#Flatten.Ray with ellipse', function() {
+    it('Can intersect ray with ellipse', function () {
+        let ip = ray(point(0, 0)).intersect(ellipse(point(0, 0), 2, 1));
+        expect(ip.length).to.equal(1);
+        expect(ip[0].equalTo(point(2, 0))).to.be.true;
+    });
+    it('Can intersect ray with elliptic arc', function () {
+        let r = ray(point(-3, 0.5));
+        expect(r.intersect(ellipticArc(point(0, 0), 2, 1, 0, 0, Math.PI)).length).to.equal(2);
+        expect(r.intersect(ellipticArc(point(0, 0), 2, 1, 0, Math.PI, 2 * Math.PI)).length).to.equal(0);
     });
 });

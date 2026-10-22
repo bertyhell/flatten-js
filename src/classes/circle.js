@@ -107,6 +107,17 @@ export class Circle extends Shape {
                 Flatten.Utils.LE(shape.center.distanceTo(this.center)[0], this.r);
         }
 
+        if (shape instanceof Flatten.EllipticArc) {
+            return this.intersect(shape).length === 0 &&
+                Flatten.Utils.LE(shape.start.distanceTo(this.center)[0], this.r) &&
+                Flatten.Utils.LE(shape.end.distanceTo(this.center)[0], this.r);
+        }
+
+        if (shape instanceof Flatten.Ellipse) {
+            return this.intersect(shape).length === 0 &&
+                Flatten.Utils.LE(shape.pointAt(0).distanceTo(this.center)[0], this.r);
+        }
+
         /* TODO: box, polygon */
     }
 
@@ -172,6 +183,12 @@ export class Circle extends Shape {
         if (shape instanceof Flatten.Arc) {
             return Intersection.intersectArc2Circle(shape, this);
         }
+        if (shape instanceof Flatten.Ellipse) {
+            return Intersection.intersectEllipse2Circle(shape, this);
+        }
+        if (shape instanceof Flatten.EllipticArc) {
+            return Intersection.intersectEllipticArc2Circle(shape, this);
+        }
         if (shape instanceof Flatten.Polygon) {
             return Intersection.intersectCircle2Polygon(this, shape);
         }
@@ -212,6 +229,18 @@ export class Circle extends Shape {
 
         if (shape instanceof Flatten.Arc) {
             let [distance, shortest_segment] = Flatten.Distance.arc2circle(shape, this);
+            shortest_segment = shortest_segment.reverse();
+            return [distance, shortest_segment];
+        }
+
+        if (shape instanceof Flatten.Ellipse) {
+            let [distance, shortest_segment] = Flatten.Distance.ellipse2circle(shape, this);
+            shortest_segment = shortest_segment.reverse();
+            return [distance, shortest_segment];
+        }
+
+        if (shape instanceof Flatten.EllipticArc) {
+            let [distance, shortest_segment] = Flatten.Distance.ellipticArc2circle(shape, this);
             shortest_segment = shortest_segment.reverse();
             return [distance, shortest_segment];
         }

@@ -6,7 +6,7 @@
 import { expect } from 'chai';
 import Flatten, {Arc} from '../../index';
 
-import {Box, Point, Segment} from '../../index';
+import {Box, Point, Segment, ellipse, ellipticArc, point} from '../../index';
 
 describe('#Flatten.Box', function() {
     it('May create new instance of Box', function () {
@@ -94,5 +94,18 @@ describe('#Flatten.Box', function() {
             expect(shortest_segment.ps).to.deep.include({x: -1, y: 0.5});
             expect(shortest_segment.pe).to.deep.include({x: 0, y: 0.5});
         });
+    });
+});
+
+describe('#Flatten.Box with ellipse', function() {
+    it('Box may contain ellipse and elliptic arc', function () {
+        let box = new Box(-3, -3, 3, 3);
+        expect(box.contains(ellipse(point(0, 0), 2, 1, 0.5))).to.be.true;
+        expect(box.contains(ellipse(point(0, 0), 4, 1))).to.be.false;
+        expect(box.contains(ellipticArc(point(0, 0), 2, 1, 0, 0, Math.PI))).to.be.true;
+    });
+    it('Can measure distance from box to ellipse', function () {
+        let [dist] = new Box(4, -1, 6, 1).distanceTo(ellipse(point(0, 0), 2, 1));
+        expect(dist).to.be.closeTo(2, Flatten.DP_TOL);
     });
 });

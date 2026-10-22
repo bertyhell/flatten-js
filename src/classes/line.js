@@ -235,6 +235,14 @@ export class Line extends Shape {
             return Intersection.intersectLine2Arc(this, shape);
         }
 
+        if (shape instanceof Flatten.Ellipse) {
+            return Intersection.intersectLine2Ellipse(this, shape);
+        }
+
+        if (shape instanceof Flatten.EllipticArc) {
+            return Intersection.intersectLine2EllipticArc(this, shape);
+        }
+
         if (shape instanceof Flatten.Polygon) {
             return  Intersection.intersectLine2Polygon(this, shape);
         }
@@ -270,6 +278,16 @@ export class Line extends Shape {
 
         if (shape instanceof Flatten.Arc) {
             let [distance, shortest_segment] = Flatten.Distance.arc2line(shape, this);
+            return [distance, shortest_segment.reverse()];
+        }
+
+        if (shape instanceof Flatten.Ellipse) {
+            let [distance, shortest_segment] = Flatten.Distance.ellipse2line(shape, this);
+            return [distance, shortest_segment.reverse()];
+        }
+
+        if (shape instanceof Flatten.EllipticArc) {
+            let [distance, shortest_segment] = Flatten.Distance.ellipticArc2line(shape, this);
             return [distance, shortest_segment.reverse()];
         }
 

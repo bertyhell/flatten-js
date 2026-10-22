@@ -6,7 +6,7 @@ import { expect } from 'chai';
 import Flatten, {arc, matrix} from '../../index';
 
 import {Point, Circle, Line, Segment, Arc, Box, Polygon, Edge, PlanarSet, Multiline} from '../../index';
-import {point, vector, circle, line, segment, box, multiline} from '../../index';
+import {point, vector, circle, line, segment, box, multiline, ellipse, ellipticArc} from '../../index';
 import {intersectPolygon2Polygon, intersectMultiline2Polygon} from "../../src/algorithms/intersection";
 import * as BooleanOperations from "../../src/algorithms/boolean_op";
 let {unify} = BooleanOperations;
@@ -1184,5 +1184,53 @@ describe('#Flatten.Polygon', function() {
             expect(typeof svg).to.be.equal("string")
             expect(svg).to.not.equal("");
         });
+    });
+});
+
+describe('#Flatten.Polygon with ellipse', function() {
+    it('May construct polygon from ellipse', function() {
+        let polygon = new Polygon(ellipse(point(0, 0), 2, 1));
+        expect(polygon.faces.size).to.equal(1);
+        expect(polygon.edges.size).to.equal(1);
+        expect([...polygon.edges][0].isEllipticArc).to.be.true;
+        expect(polygon.area()).to.be.closeTo(2 * Math.PI, Flatten.DP_TOL);
+    });
+    it('May add ellipse as a face', function() {
+        let polygon = new Polygon();
+        polygon.addFace(ellipse(point(0, 0), 3, 1, Math.PI / 3));
+        expect(polygon.area()).to.be.closeTo(3 * Math.PI, Flatten.DP_TOL);
+    });
+    it('Can intersect polygon with ellipse and elliptic arc', function() {
+        let polygon = new Polygon(new Box(-1, -2, 1, 2));
+        expect(polygon.intersect(ellipse(point(0, 0), 2, 1)).length).to.equal(4);
+        expect(polygon.intersect(ellipticArc(point(0, 0), 2, 1, 0, 0, Math.PI)).length).to.equal(2);
+    });
+    it('Can measure distance from polygon to ellipse', function() {
+        let polygon = new Polygon(new Box(4, -1, 6, 1));
+        let [dist, shortest_segment] = polygon.distanceTo(ellipse(point(0, 0), 2, 1));
+        expect(dist).to.be.closeTo(2, Flatten.DP_TOL);
+        expect(shortest_segment.ps.equalTo(point(4, 0))).to.be.true;
+        expect(shortest_segment.pe.equalTo(point(2, 0))).to.be.true;
+    });
+    it('Can measure distance between polygons with elliptic edges', function() {
+        let polygon1 = new Polygon(ellipse(point(0, 0), 2, 1));
+        let polygon2 = new Polygon(ellipse(point(6, 0), 2, 1));
+        let [dist] = polygon1.distanceTo(polygon2);
+        expect(dist).to.be.closeTo(2, Flatten.DP_TOL);
+        let [dist_pt] = point(0, 3).distanceTo(polygon1);
+        expect(dist_pt).to.be.closeTo(2, Flatten.DP_TOL);
+    });
+    it('Polygon with elliptic edge may be cut with line', function() {
+        let polygon = new Polygon(ellipse(point(0, 0), 2, 1));
+        let cut = polygon.cutWithLine(line(point(0, 0), vector(1, 0)));
+        expect(cut.faces.size).to.equal(2);
+        expect(cut.area()).to.be.closeTo(polygon.area(), Flatten.DP_TOL);
+    });
+    it('Can transform polygon with elliptic edge', function() {
+        let polygon = new Polygon(ellipse(point(0, 0), 2, 1));
+        let scaled = polygon.scale(2, 3);
+        expect(scaled.area()).to.be.closeTo(12 * Math.PI, Flatten.DP_TOL);
+        let rotated = polygon.rotate(Math.PI / 3, point(1, 1));
+        expect(rotated.area()).to.be.closeTo(2 * Math.PI, Flatten.DP_TOL);
     });
 });
