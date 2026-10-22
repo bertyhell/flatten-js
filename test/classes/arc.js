@@ -466,3 +466,25 @@ describe('#Flatten.Arc with ellipse', function() {
         expect(dist2).to.be.closeTo(2, Flatten.DP_TOL);
     });
 });
+
+describe('#Flatten.Arc non-uniform transformation', function() {
+    it('Non-uniform scaling of arc returns elliptic arc', function () {
+        let a = arc(point(1, 1), 1, 0, Math.PI / 2, true);
+        let ea = a.scale(3, 2);
+        expect(ea).to.be.an.instanceof(Flatten.EllipticArc);
+        expect(ea.start.equalTo(point(6, 2))).to.be.true;
+        expect(ea.end.equalTo(point(3, 4))).to.be.true;
+        expect(ea.middle().equalTo(a.middle().scale(3, 2))).to.be.true;
+        expect(ea.rx).to.be.closeTo(3, Flatten.DP_TOL);
+        expect(ea.ry).to.be.closeTo(2, Flatten.DP_TOL);
+    });
+    it('Uniform scaling and rotation of arc still return arc', function () {
+        expect(arc(point(), 1, 0, 1).scale(2, 2)).to.be.an.instanceof(Flatten.Arc);
+        expect(arc(point(), 1, 0, 1).rotate(1)).to.be.an.instanceof(Flatten.Arc);
+        expect(arc(point(), 1, 0, 1).scale(-1, 1)).to.be.an.instanceof(Flatten.Arc);
+    });
+    it('Polygon with arcs scaled non-uniformly keeps correct area', function () {
+        let polygon = new Polygon(circle(point(0, 0), 1));
+        expect(polygon.scale(3, 2).area()).to.be.closeTo(6 * Math.PI, Flatten.DP_TOL);
+    });
+});

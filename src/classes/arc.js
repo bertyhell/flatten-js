@@ -448,10 +448,19 @@ export class Arc extends Shape {
 
     /**
      * Return new arc transformed using affine transformation matrix <br/>
+     * If transformation is not a similarity (e.g. non-uniform scaling or skewing),
+     * the result is an elliptic arc
      * @param {Matrix} matrix - affine transformation matrix
-     * @returns {Arc}
+     * @returns {Arc | EllipticArc}
      */
     transform(matrix = new Flatten.Matrix()) {
+        // Image of the arc under transformation that is not a similarity
+        // (non-uniform scaling, skewing) is an elliptic arc
+        let {a, b, c, d} = matrix;
+        if (!Flatten.Utils.EQ(a * a + b * b, c * c + d * d) || !Flatten.Utils.EQ_0(a * c + b * d)) {
+            return new Flatten.EllipticArc(this.pc, this.r, this.r, 0,
+                this.startAngle, this.endAngle, this.counterClockwise).transform(matrix);
+        }
         let newStart = this.start.transform(matrix);
         let newEnd = this.end.transform(matrix);
         let newCenter = this.pc.transform(matrix);

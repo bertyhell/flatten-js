@@ -7,9 +7,9 @@ import { expect } from 'chai';
 // import Flatten from '../../index';
 
 import {Point, Circle, Line, Inversion} from '../../index';
-import {point, circle, line, vector} from '../../index';
+import {point, circle, line, vector, ellipse} from '../../index';
 
-describe('#Flatten.Inversion', function() {
+describe('#Inversion', function() {
     it('May create new instance of Inversion object', function () {
         const I = new Inversion(circle(point(100,100),50));
         expect(I).to.be.an.instanceof(Inversion);
@@ -70,3 +70,16 @@ describe('#Flatten.Inversion', function() {
 
 });
 
+describe('#Inversion with ellipse', function() {
+    it('Circular ellipse is inverted as a circle', function () {
+        let inv = new Inversion(circle(point(0, 0), 2));
+        let e = ellipse(point(5, 0), 1, 1);
+        let result = inv.inverse(e);
+        let expected = inv.inverse(circle(point(5, 0), 1));
+        expect(result).to.deep.equal(expected);
+    });
+    it('Inversion of non-circular ellipse throws unsupported shape type', function () {
+        let inv = new Inversion(circle(point(0, 0), 2));
+        expect(() => inv.inverse(ellipse(point(5, 0), 2, 1))).to.throw();
+    });
+});

@@ -155,8 +155,8 @@ declare namespace Flatten {
         translate(vec: Vector): Arc;
         translate(x:number, y:number): Arc;
         rotate(angle: number, center?: Point): Arc;
-        scale(scaleX: number, scaleY: number) : Arc;
-        transform(matrix: Matrix): Arc;
+        scale(scaleX: number, scaleY: number) : Arc | EllipticArc;
+        transform(matrix: Matrix): Arc | EllipticArc;
         sortPoints(pts: Array<Point>): Array<Point>;
         toJSON() : Object;
         svg(attrs?: SVGAttributes): string;

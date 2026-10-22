@@ -76,6 +76,14 @@ export class Inversion {
         else if (shape instanceof Line) {
             return Inversion.inverseLine(this.circle, shape);
         }
+        else if (shape instanceof Flatten.Ellipse) {
+            // Inverse image of a true ellipse is a quartic curve, which cannot be represented
+            // by the library shapes. Only an ellipse with equal semi-axes (a circle) is supported
+            if (Utils.EQ(shape.rx, shape.ry)) {
+                return Inversion.inverseCircle(this.circle, new Circle(shape.pc, shape.rx));
+            }
+            throw Flatten.Errors.UNSUPPORTED_SHAPE_TYPE;
+        }
     }
 };
 
